@@ -1,4 +1,5 @@
-from logging import info
+import logging
+logger = logging.getLogger('p4a.z2utils.patches')
 
 def apply_patches():
     _apply_getSubObject_patch()
@@ -15,6 +16,11 @@ def _apply_getSubObject_patch():
     except:
         return
     
+    # make sure we don't patch something that's already been patched
+    patched = getattr(Archetypes, '_p4a_z2utils_patched', False)
+    if patched:
+        return
+
     try:
         from Products.Archetypes import bbb
         # the bbb module is included with AT 1.4 and higher where we do
@@ -23,8 +29,7 @@ def _apply_getSubObject_patch():
     except ImportError, e:
         pass
 
-    info("p4a.z2utils: "
-         "Fixing Archetypes Zope 3 traversal.")
+    logger.info("Fixing Archetypes Zope 3 traversal.")
 
     from Products.Archetypes.BaseObject import BaseObject
     
@@ -84,6 +89,7 @@ def _apply_getSubObject_patch():
 
     BaseObject.getSubObject = getSubObject
 
+    Archetypes._p4a_z2utils_patched = True
 
 
 def _apply_DynamicView_patch():
@@ -93,9 +99,13 @@ def _apply_DynamicView_patch():
     except:
         return
 
-    from logging import info
-    info("p4a.z2utils: "
-         "Extending dynamic view support with interfaces.")
+    # make sure we don't patch something that's already been patched
+    patched = getattr(CMFDynamicViewFTI, '_p4a_z2utils_patched', False)
+    if patched:
+        return
+
+    logger.info("Extending CMFDynamicViewFTI's dynamic view support "
+                "with interfaces.")
 
     from zope.interface import Interface
 
@@ -172,3 +182,5 @@ def _apply_DynamicView_patch():
 
     from Products.CMFDynamicViewFTI import interfaces
     interfaces.IDynamicallyViewable = IDynamicallyViewable
+
+    CMFDynamicViewFTI._p4a_z2utils_patched = True
