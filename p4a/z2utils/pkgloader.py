@@ -1,5 +1,6 @@
 import os
 import sys
+from App import Common as appcommon
 from Products.Five import zcml
 
 def setup_basedir_pythonpath(basedir):
@@ -52,3 +53,43 @@ def load_extrazcml(items):
             zcml.load_config('configure.zcml', m)
         except IOError: # No file
             pass
+
+class InitBuilder(object):
+    """InitBuilder is simply a helper for constructing the ``__init__.py``
+    for a Zope 2 product that adds all extralibs based python packages
+    to the pythonpath and loads their zcml.
+
+      >>> builder = InitBuilder(globals=globals())
+      >>> builder.setup_pythonpath()
+      []
+      
+      >>> builder.init_gen()
+      <function initialize ...>
+      
+    """
+    
+    def __init__(self, package=None, globals=None, extralibs='extralibs'):
+        if package is None and globals is None:
+            raise ValueError('Either package or globals must be specified')
+        
+        self.package = package or globals['__name__']
+        self.extralibs = extralibs
+
+    def setup_pythonpath(self):
+        pkg_home = appcommon.package_home({'__name__': self.package})
+        basedir = os.path.join(pkg_home, self.extralibs)
+        if not os.path.isdir(basedir):
+            return []
+        
+        self.extralibs_configured = \
+            [os.path.basename(x) 
+             for x in setup_basedir_pythonpath(basedir)]
+            
+        return self.extralibs_configured
+
+    def init_gen(self):
+        def initialize(context):
+            load_extrazcml(['p4a.common']) # needs to be loaded first
+            load_extrazcml(self.extralibs_configured)
+
+        return initialize
