@@ -81,7 +81,7 @@ def _apply_getSubObject_patch():
         try:
             return ITraverser(self).traverse(
                 path=[name], request=REQUEST).__of__(self)
-        except (ComponentLookupError, LookupError,
+        except (ComponentLookupError, LookupError, TypeError,
                 AttributeError, KeyError, NotFound):
             pass
         
