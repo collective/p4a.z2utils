@@ -126,14 +126,25 @@ def _apply_DynamicView_patch():
             """
 
 
+    from Products.CMFDynamicViewFTI.fti import DynamicViewTypeInformation
+    from Products.CMFDynamicViewFTI.browserdefault import BrowserDefaultMixin
+    from Products.CMFDynamicViewFTI.browserdefault import BrowserDefaultMixin
+    
+    orig_getAvailableViewMethods = (
+        DynamicViewTypeInformation.getAvailableViewMethods.im_func)
+    orig_getDefaultViewMethod = (
+        DynamicViewTypeInformation.getDefaultViewMethod.im_func)
+    orig_getAvailableLayouts = (
+        BrowserDefaultMixin.getAvailableLayouts.im_func)
+
     def getDefaultViewMethod(self, context):
         """Get the default view method from the FTI
         """
         adapter = IDynamicallyViewable(context, None)
         if adapter is not None:
             return adapter.getDefaultViewMethod()
-        # Fall back to old FTI information
-        return str(self.default_view)
+
+        return orig_getDefaultViewMethod(self, context)
 
     def getAvailableViewMethods(self, context):
         """Get a tuple of registered view methods
@@ -142,11 +153,7 @@ def _apply_DynamicView_patch():
         if adapter is not None:
             return adapter.getAvailableViewMethods()
 
-        # Fall back to old FTI information
-        methods = self.view_methods
-        if isinstance(methods, basestring):
-            methods = (methods,)
-        return tuple(methods)
+        return orig_getAvailableViewMethods(self, context)
 
     def getAvailableLayouts(self):
         """Get the layouts registered for this object
@@ -155,29 +162,10 @@ def _apply_DynamicView_patch():
         if adapter is not None:
             return adapter.getAvailableLayouts()
 
-        # Fall back to old FTI information
-        fti = self.getTypeInfo()
-        if fti is None:
-            return ()
-        result = []
-        method_ids = fti.getAvailableViewMethods(self)
-        for mid in method_ids:
-            method = getattr(self, mid, None)
-            if method is not None:
-                # a method might be a template, script or method
-                try:
-                    title = method.aq_inner.aq_explicit.title_or_id()
-                except AttributeError:
-                    title = mid
-                result.append((mid, title))
-            
-        return result
+        return orig_getAvailableLayouts(self)
 
-    from Products.CMFDynamicViewFTI.fti import DynamicViewTypeInformation
     DynamicViewTypeInformation.getAvailableViewMethods = getAvailableViewMethods
     DynamicViewTypeInformation.getDefaultViewMethod = getDefaultViewMethod
-
-    from Products.CMFDynamicViewFTI.browserdefault import BrowserDefaultMixin
     BrowserDefaultMixin.getAvailableLayouts = getAvailableLayouts
 
     from Products.CMFDynamicViewFTI import interfaces
