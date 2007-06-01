@@ -9,13 +9,13 @@ def _apply_getSubObject_patch():
     """Apply a patch to AT < 1.4 so that traversal checks for data
     object first, then zope 3 view, then acquired attributes.
     """
-    
+
     try:
         # don't patch if Archetypes isn't present
         from Products import Archetypes
     except:
         return
-    
+
     # make sure we don't patch something that's already been patched
     patched = getattr(Archetypes, '_p4a_z2utils_patched', False)
     if patched:
@@ -32,11 +32,6 @@ def _apply_getSubObject_patch():
     logger.info("Fixing Archetypes Zope 3 traversal.")
 
     from Products.Archetypes.BaseObject import BaseObject
-    
-    if hasattr(BaseObject, '__p4a_orig_getSubObject'):
-        # don't patch if already patched
-        return
-
     from zope.app.publication.browser import setDefaultSkin
     from zope.app.traversing.interfaces import ITraverser, ITraversable
     from zope.component import getMultiAdapter, ComponentLookupError
@@ -45,14 +40,13 @@ def _apply_getSubObject_patch():
     import Products.Five.security
     from zExceptions import NotFound
 
-    
-    BaseObject.__p4a_orig_getSubObject = BaseObject.getSubObject
-    
+    BaseObject.__p4a_z2utils_orig_getSubObject = BaseObject.getSubObject
+
     def getSubObject(self, name, REQUEST, RESPONSE=None):
-        obj = self.__p4a_orig_getSubObject(name, REQUEST, RESPONSE)
+        obj = self.__p4a_z2utils_orig_getSubObject(name, REQUEST, RESPONSE)
         if obj is not None:
             return obj
-        
+
         # The following is a copy from Five's __bobo_traverse__ stuff,
         # see Products.Five.traversable for details.
         # Basically we're forcing Archetypes to look up the correct
@@ -60,7 +54,7 @@ def _apply_getSubObject_patch():
         #   1) check for data object first
         #   2) check for zope3 view 
         #   3) return nothing so that AT's default __bobo_traverse__ will use aq
-        
+
         if not IBrowserRequest.providedBy(REQUEST):
             # Try to get the REQUEST by acquisition
             REQUEST = getattr(self, 'REQUEST', None)
@@ -84,15 +78,18 @@ def _apply_getSubObject_patch():
         except (ComponentLookupError, LookupError, TypeError,
                 AttributeError, KeyError, NotFound):
             pass
-        
+
         return None
 
     BaseObject.getSubObject = getSubObject
 
     Archetypes._p4a_z2utils_patched = True
 
-
 def _apply_DynamicView_patch():
+    """Enable CMFDynamicViewFTI to pull the available/default view(s) from
+    adapters.
+    """
+
     try:
         # don't patch if CMFDynamicViewFTI is not available
         from Products import CMFDynamicViewFTI
@@ -102,6 +99,12 @@ def _apply_DynamicView_patch():
     # make sure we don't patch something that's already been patched
     patched = getattr(CMFDynamicViewFTI, '_p4a_z2utils_patched', False)
     if patched:
+        return
+
+    # here's hoping that the current version of CMFDynamicViewFTI has
+    # already had this code integrated into core 
+    from Products.CMFDynamicViewFTI import interfaces
+    if hasattr(interfaces, 'IDynamicallyViewable'):
         return
 
     logger.info("Extending CMFDynamicViewFTI's dynamic view support "
@@ -114,22 +117,21 @@ def _apply_DynamicView_patch():
         def getDefaultViewMethod():
             """Get the name of the default view method
             """
-            
+
         def getAvailableViewMethods():
             """Get a tuple of registered view method names
             """
-            
+
         def getAvailableLayouts(self):
             """Get the layouts for this object
-            
+
             Returns tuples of tuples of view name + title.
             """
-
 
     from Products.CMFDynamicViewFTI.fti import DynamicViewTypeInformation
     from Products.CMFDynamicViewFTI.browserdefault import BrowserDefaultMixin
     from Products.CMFDynamicViewFTI.browserdefault import BrowserDefaultMixin
-    
+
     orig_getAvailableViewMethods = (
         DynamicViewTypeInformation.getAvailableViewMethods.im_func)
     orig_getDefaultViewMethod = (
@@ -168,7 +170,6 @@ def _apply_DynamicView_patch():
     DynamicViewTypeInformation.getDefaultViewMethod = getDefaultViewMethod
     BrowserDefaultMixin.getAvailableLayouts = getAvailableLayouts
 
-    from Products.CMFDynamicViewFTI import interfaces
     interfaces.IDynamicallyViewable = IDynamicallyViewable
 
     CMFDynamicViewFTI._p4a_z2utils_patched = True
