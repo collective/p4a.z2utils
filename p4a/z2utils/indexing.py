@@ -1,11 +1,7 @@
 from Products.CMFCore import utils as cmfutils
 from Products.CMFPlone import CatalogTool
 from zope import interface
-
-def interfaceToName(context, iface):
-    # context argument only used to maintain api compatibility with
-    # interfaceToName from zope 3.3
-    return iface.__module__ + '.' + iface.__name__
+from p4a.z2utils.utils import interfaceToName
 
 # Plone 3 provides this so we want to use plone 3's instead if possible
 if not hasattr(CatalogTool, 'object_provides'):
