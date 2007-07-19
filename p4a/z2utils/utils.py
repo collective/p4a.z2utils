@@ -32,7 +32,11 @@ def objs_with_iface(context, iface):
     catalog that provides the given interface.  The result will be a generator
     for scalability reasons.
 
-      >>> 
+      >>> class Mock(object): pass
+      >>> m = Mock()
+      >>> m.portal_catalog = lambda x: [1,2,3]
+      >>> [x for x in objs_with_iface(m, None)]
+
     """
 
 
