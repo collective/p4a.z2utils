@@ -7,6 +7,8 @@ def test_suite():
                              package='p4a.z2utils'),
         doctest.DocTestSuite('p4a.z2utils.pkgloader',
                              optionflags=doctest.ELLIPSIS),
+        doctest.DocTestSuite('p4a.z2utils.utils',
+                             optionflags=doctest.ELLIPSIS),
         ))
 
 if __name__ == "__main__":
