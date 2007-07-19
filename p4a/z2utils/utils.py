@@ -5,6 +5,15 @@ try:
     from zope.component.interface import interfaceToName
 except ImportError:
     def interfaceToName(context, iface):
+        """Return the string representation of the given iface name.
+
+            >>> from zope import interface
+            >>> class ITest(interface.Interface): pass
+            >>> interfaceToName(None, ITest)
+            'p4a.z2utils.utils.ITest'
+
+        """
+
         # context argument only used to maintain api compatibility with
         # interfaceToName from zope 3.3
         return iface.__module__ + '.' + iface.__name__
@@ -14,6 +23,24 @@ def remove_marker_ifaces(context, ifaces):
     query.  context needs to either be the portal or be properly aq wrapped
     to allow for cmf catalog tool lookup.  ifaces can be either a single
     interface or a sequence of interfaces.
+
+      >>> from zope import interface
+      >>> class ITest(interface.Interface): pass
+      >>> class Mock(object):
+      ...     def __init__(self, id): self.id = id
+      ...     def getObject(self): return self
+      ...     def __repr__(self): return '<Mock id=%s>' % self.id
+      >>> m = Mock('Portal Root')
+      >>> objs = [Mock('m1'), Mock('m2'), Mock('m3')]
+      >>> interface.directlyProvides(objs[1], ITest)
+      >>> m.portal_catalog = lambda **kwargs: objs
+
+      >>> remove_marker_ifaces(m, ITest)
+      1
+
+      >>> remove_marker_ifaces(m, [ITest])
+      0
+
     """
 
     if not isinstance(ifaces, (tuple, list)):
@@ -32,14 +59,21 @@ def objs_with_iface(context, iface):
     catalog that provides the given interface.  The result will be a generator
     for scalability reasons.
 
-      >>> class Mock(object): pass
-      >>> m = Mock()
-      >>> m.portal_catalog = lambda x: [1,2,3]
-      >>> [x for x in objs_with_iface(m, None)]
+      >>> from zope import interface
+      >>> class ITest(interface.Interface): pass
+      >>> class Mock(object):
+      ...     def __init__(self, id): self.id = id
+      ...     def getObject(self): return self
+      ...     def __repr__(self): return '<Mock id=%s>' % self.id
+      >>> m = Mock('Portal Root')
+      >>> objs = [Mock('m1'), Mock('m2'), Mock('m3')]
+      >>> interface.directlyProvides(objs[1], ITest)
+      >>> m.portal_catalog = lambda **kwargs: objs
+
+      >>> [x for x in objs_with_iface(m, ITest)]
+      [<Mock id=m2>]
 
     """
-
-
 
     catalog = cmfutils.getToolByName(context, 'portal_catalog')
 
