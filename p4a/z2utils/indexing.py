@@ -6,6 +6,11 @@ from p4a.z2utils.utils import interfaceToName
 # Plone 3 provides this so we want to use plone 3's instead if possible
 if not hasattr(CatalogTool, 'object_provides'):
     def object_provides(object, portal, **kw):
+        """Returns a list of strings representing all interfaces provided by
+        an object.
+        
+        """
+
         return [interfaceToName(portal, i)
                 for i in interface.providedBy(object).flattened()]
 
