@@ -8,7 +8,7 @@ if not hasattr(CatalogTool, 'object_provides'):
     def object_provides(object, portal, **kw):
         """Returns a list of strings representing all interfaces provided by
         an object.
-        
+
         """
 
         return [interfaceToName(portal, i)
@@ -17,6 +17,10 @@ if not hasattr(CatalogTool, 'object_provides'):
     CatalogTool.registerIndexableAttribute('object_provides', object_provides)
 
 def ensure_object_provides(context):
+    """Make sure the closest catalog to context has an index representing
+    the object_provides index.
+    """
+
     catalog = cmfutils.getToolByName(context, 'portal_catalog')
     if 'object_provides' not in catalog.indexes():
         catalog.manage_addIndex('object_provides', 'KeywordIndex')
