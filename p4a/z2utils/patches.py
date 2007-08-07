@@ -5,6 +5,47 @@ def apply_patches():
     _apply_getSubObject_patch()
     _apply_DynamicView_patch()
 
+def unapply_patches():
+    _unapply_getSubObject_patch()
+    _unapply_DynamicView_patch()
+
+def _unapply_getSubObject_patch():
+    import Products.Archetypes
+    patched = getattr(Products.Archetypes, '_p4a_z2utils_patched', False)
+    if patched:
+        from Products.Archetypes.BaseObject import BaseObject
+        BaseObject.getSubObject = BaseObject.__p4a_z2utils_orig_getSubObject
+        del BaseObject.__p4a_z2utils_orig_getSubObject
+        del Products.Archetypes._p4a_z2utils_patched
+        return True
+    return False
+
+def _unapply_DynamicView_patch():
+    import Products.CMFDynamicViewFTI
+    patched = getattr(Products.CMFDynamicViewFTI, '_p4a_z2utils_patched', False)
+    if patched:
+        from Products.CMFDynamicViewFTI.fti import DynamicViewTypeInformation
+        from Products.CMFDynamicViewFTI.browserdefault import \
+             BrowserDefaultMixin
+
+        DynamicViewTypeInformation.getAvailableViewMethods = \
+            DynamicViewTypeInformation. \
+                __p4a_z2utils_orig_getAvailableViewMethods
+        DynamicViewTypeInformation.getDefaultViewMethod = \
+            DynamicViewTypeInformation.__p4a_z2utils_orig_getDefaultViewMethod
+        BrowserDefaultMixin.getAvailableLayouts = \
+            BrowserDefaultMixin.__p4a_z2utils_orig_getAvailableLayouts
+
+        del DynamicViewTypeInformation. \
+            __p4a_z2utils_orig_getAvailableViewMethods
+        del DynamicViewTypeInformation.__p4a_z2utils_orig_getDefaultViewMethod
+        del BrowserDefaultMixin.__p4a_z2utils_orig_getAvailableLayouts
+
+        del Products.CMFDynamicViewFTI._p4a_z2utils_patched
+
+        return True
+    return False
+
 def _apply_getSubObject_patch():
     """Apply a patch to AT < 1.4 so that traversal checks for data
     object first, then zope 3 view, then acquired attributes.
@@ -66,7 +107,7 @@ def _apply_getSubObject_patch():
         Products.Five.security.newInteraction()
 
         # Use the ITraverser adapter (which in turn uses ITraversable
-        # adapters) to traverse to a view.  Note that we're mixing
+       # adapters) to traverse to a view.  Note that we're mixing
         # object-graph and object-publishing traversal here, but Zope
         # 2 has no way to tell us when to use which...
         # TODO Perhaps we can decide on object-graph vs.
@@ -130,13 +171,12 @@ def _apply_DynamicView_patch():
 
     from Products.CMFDynamicViewFTI.fti import DynamicViewTypeInformation
     from Products.CMFDynamicViewFTI.browserdefault import BrowserDefaultMixin
-    from Products.CMFDynamicViewFTI.browserdefault import BrowserDefaultMixin
 
-    orig_getAvailableViewMethods = (
+    DynamicViewTypeInformation.__p4a_z2utils_orig_getAvailableViewMethods = (
         DynamicViewTypeInformation.getAvailableViewMethods.im_func)
-    orig_getDefaultViewMethod = (
+    DynamicViewTypeInformation.__p4a_z2utils_orig_getDefaultViewMethod = (
         DynamicViewTypeInformation.getDefaultViewMethod.im_func)
-    orig_getAvailableLayouts = (
+    BrowserDefaultMixin.__p4a_z2utils_orig_getAvailableLayouts = (
         BrowserDefaultMixin.getAvailableLayouts.im_func)
 
     def getDefaultViewMethod(self, context):
@@ -146,7 +186,8 @@ def _apply_DynamicView_patch():
         if adapter is not None:
             return adapter.getDefaultViewMethod()
 
-        return orig_getDefaultViewMethod(self, context)
+        return DynamicViewTypeInformation. \
+               __p4a_z2utils_orig_getDefaultViewMethod(self, context)
 
     def getAvailableViewMethods(self, context):
         """Get a tuple of registered view methods
@@ -155,7 +196,8 @@ def _apply_DynamicView_patch():
         if adapter is not None:
             return adapter.getAvailableViewMethods()
 
-        return orig_getAvailableViewMethods(self, context)
+        return DynamicViewTypeInformation \
+               .__p4a_z2utils_orig_getAvailableViewMethods(self, context)
 
     def getAvailableLayouts(self):
         """Get the layouts registered for this object
@@ -164,7 +206,8 @@ def _apply_DynamicView_patch():
         if adapter is not None:
             return adapter.getAvailableLayouts()
 
-        return orig_getAvailableLayouts(self)
+        return BrowserDefaultMixin \
+               .__p4a_z2utils_orig_getAvailableLayouts(self)
 
     DynamicViewTypeInformation.getAvailableViewMethods = getAvailableViewMethods
     DynamicViewTypeInformation.getDefaultViewMethod = getDefaultViewMethod
