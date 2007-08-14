@@ -1,3 +1,4 @@
+import Acquisition
 from Products.CMFCore import utils as cmfutils
 from zope import interface
 
@@ -81,3 +82,52 @@ def objs_with_iface(context, iface):
         obj = brain.getObject()
         if iface in interface.directlyProvidedBy(obj):
             yield brain.getObject()
+
+def persist_five_components(context, product_name):
+    """Make sure QI doesn't uninstall the Five-created utilities folder
+    in a plone site.
+
+      >>> class Mock(object):
+      ...     def __init__(self, **kwargs):
+      ...         for key, val in kwargs.items(): setattr(self, key, val)
+      ...     def __getitem__(self, key): return self.__dict__[key]
+
+      >>> qi = Mock()
+      >>> portal = Mock(portal_quickinstaller=qi)
+      >>> context = Mock(portal_url=Mock(getPortalObject=lambda: portal))
+
+    At first SomeProduct isn't actually installed so we get a KeyError.
+
+      >>> persist_five_components(context, 'SomeProduct')
+      Traceback (most recent call last):
+      KeyError: 'No product installed with the name "SomeProduct"'
+
+      >>> qi.SomeProduct = Mock(portalobjects=['abc', 'def'])
+      >>> persist_five_components(context, 'SomeProduct')
+      >>> qi.SomeProduct.portalobjects
+      ['abc', 'def']
+
+      >>> qi.SomeProduct.portalobjects.append('utilities')
+      >>> qi.SomeProduct.portalobjects
+      ['abc', 'def', 'utilities']
+
+      >>> persist_five_components(context, 'SomeProduct')
+      >>> qi.SomeProduct.portalobjects
+      ['abc', 'def']
+
+    """
+
+    portal_url = cmfutils.getToolByName(Acquisition.aq_inner(context),
+                                        'portal_url')
+    portal = portal_url.getPortalObject()
+    qi = portal.portal_quickinstaller
+    try:
+        ip = qi[product_name]
+    except KeyError, e:
+        raise KeyError('No product installed with the name "%s"' %
+                       str(product_name))
+
+    if 'utilities' in getattr(ip, 'portalobjects', []):
+        portalobjects = [x for x in ip.portalobjects
+                         if x != 'utilities']
+        ip.portalobjects = portalobjects
