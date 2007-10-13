@@ -5,10 +5,8 @@ version = '0.1'
 
 setup(name='p4a.z2utils',
       version=version,
-      description="",
-      long_description="""\
-""",
-      # Get more strings from http://www.python.org/pypi?%3Aaction=list_classifiers
+      description="Miscellaneous utilities for Zope 2",
+      long_description="""""",
       classifiers=[
         "Framework :: Zope2",
         "Framework :: Zope3",
