@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-version = '1.0.1'
+version = '1.0.3'
 
 setup(name='p4a.z2utils',
       version=version,
